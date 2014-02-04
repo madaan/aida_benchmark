@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
 
 import mpi.aida.Disambiguator;
 import mpi.aida.Preparator;
@@ -21,66 +22,99 @@ import mpi.aida.data.ResultEntity;
 import mpi.aida.data.ResultMention;
 import mpi.aida.graph.similarity.exception.MissingSettingException;
 
-
 public class AidaAnnotator {
 
 	PreparationSettings preparationSettings;
 	DisambiguationSettings disambiguationSettings;
-	String corpusPath; //path to the data files
-
-	public AidaAnnotator(PreparationSettings preparationSettings, DisambiguationSettings disambiguationSettings, String corpusPath) {
+	String corpusPath; // path to the data files
+	HashSet<String> aidaEntities;
+	HashSet<String> csawEntities;
+	
+	public AidaAnnotator(PreparationSettings preparationSettings,
+			DisambiguationSettings disambiguationSettings, String corpusPath) {
 		this.preparationSettings = preparationSettings;
 		this.disambiguationSettings = disambiguationSettings;
-		this.corpusPath =corpusPath;
+		this.corpusPath = corpusPath;
 	}
 
-	public static void main(String args[]) throws MissingSettingException
-	{
-		AidaAnnotator aa = new AidaAnnotator(new StanfordHybridPreparationSettings(), //settings for NER
-											new CocktailPartyDisambiguationSettings(), //settings for AIDA
-											"data/test" //path to corpus
-		);		
+	public static void main(String args[]) throws MissingSettingException, IOException {
+		AidaAnnotator aa = new AidaAnnotator(
+				new StanfordHybridPreparationSettings(), // settings for NER
+				new CocktailPartyDisambiguationSettings(), // settings for AIDA
+				"data/crawledDocs" // path to corpus
+		);
+		if (args.length != 0) { // per file disambiguation
+			System.out.println("Running in args mode");
+			String inputText = aa.readFileToString(args[0]);
+			DisambiguationResults dres = aa.annotate(inputText);
+			if (dres == null) {
+				return;
+			}
+			File f = new File(args[0]);
+			aa.writeXML(dres, f.getName());
+			return;
+		}
 		try {
 			aa.process();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	//takes the path to the data files as input and generates a disambiguated 
-	private void process() throws IOException
-	{
+
+	// annotates the text provided as input and returns results
+	private DisambiguationResults annotate(String inputText) {
+		// preparing the input
+		Preparator p = new Preparator();
+		PreparedInput input = p.prepare(inputText, preparationSettings);
+		// Disambiguate the input with the graph coherence algorithm.
+		// disSettings = new FastLocalDisambiguationSettings();
+		Disambiguator d = new Disambiguator(input, disambiguationSettings);
+		DisambiguationResults results = null;
+		try {
+			results = d.disambiguate();
+		} catch (NullPointerException e) {
+
+			e.printStackTrace();
+			return null;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return results;
+	}
+
+	// takes the path to the data files as input and generates a disambiguated
+	private void process() throws IOException {
 		Preparator p = new Preparator();
 		File corpus = new File(corpusPath);
 		File[] listOfFiles = corpus.listFiles();
-		for(File afile : listOfFiles) {
+		for (File afile : listOfFiles) {
 			String inputText = readFileToString(afile.getCanonicalPath());
 			System.out.println("Disambiguating File : " + afile.getName());
 			DisambiguationResults dres = annotate(inputText, p);
 			writeXML(dres, afile.getName());
-		}	
-	}
-	
-	//annotates the text provided as input and returns results
-	private DisambiguationResults annotate(String inputText, Preparator p) 
-	{
-		//preparing the input
-				
-				PreparedInput input = p.prepare(inputText, preparationSettings);
-				// Disambiguate the input with the graph coherence algorithm.
-				//disSettings = new FastLocalDisambiguationSettings();
-				Disambiguator d = new Disambiguator(input, disambiguationSettings);
-				DisambiguationResults results = null;
-				try {
-					results = d.disambiguate();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				return results;
+		}
 	}
 
-	//returns the file (specified by filename) in a string
+	// annotates the text provided as input and returns results
+	private DisambiguationResults annotate(String inputText, Preparator p) {
+		// preparing the input
+
+		PreparedInput input = p.prepare(inputText, preparationSettings);
+		// Disambiguate the input with the graph coherence algorithm.
+		// disSettings = new FastLocalDisambiguationSettings();
+		Disambiguator d = new Disambiguator(input, disambiguationSettings);
+		DisambiguationResults results = null;
+		try {
+			results = d.disambiguate();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return results;
+	}
+
+	// returns the file (specified by filename) in a string
 	private String readFileToString(String fileName) {
 		BufferedReader br = null;
 		StringBuilder sb = new StringBuilder();
@@ -105,30 +139,34 @@ public class AidaAnnotator {
 		}
 		return sb.toString();
 	}
-	
-	void writeXML(DisambiguationResults results, String fileName) throws IOException
-	{
+
+	void writeXML(DisambiguationResults results, String fileName)
+			throws IOException {
 		// Print the disambiguation results.
 		try {
-			PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("AIDA_Annotations.xml", true)));
+			PrintWriter writer = new PrintWriter(new BufferedWriter(
+					new FileWriter("AIDA_Annotations.xml", true)));
 			writer.println("<AIDA.entityAnnotations>");
 			for (ResultMention rm : results.getResultMentions()) {
 				ResultEntity re = results.getBestEntity(rm);
 				writer.println("<annotation>");
 				writer.println("<docName>" + fileName + "</docName>");
 				writer.println("<userId>AIDA</userId>");
-				writer.println("<wikiName>" + re.getEntity().replace('_', ' ') + "</wikiName>");
-				writer.println("<offset>" + rm.getCharacterOffset() + "</offset>");
-				writer.println("<length>" + rm.getCharacterLength() + "</length>");
+				writer.println("<wikiName>" + re.getEntity().replace('_', ' ')
+						+ "</wikiName>");
+				writer.println("<offset>" + rm.getCharacterOffset()
+						+ "</offset>");
+				writer.println("<length>" + rm.getCharacterLength()
+						+ "</length>");
 				writer.println("</annotation>");
-		  	
+
 			}
 			writer.println("</AIDA.entityAnnotations>");
 			writer.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		}
 	}
-	
+
 }
