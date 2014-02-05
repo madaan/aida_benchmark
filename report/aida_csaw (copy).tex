@@ -42,7 +42,7 @@ The annotations are available in XML format. A sample annotation is as follows :
 </annotation>
 \end{verbatim}
 
-\subsection{Approach}
+\subsection{Benchmarking AIDA with CSAW data}
 To compare how AIDA performs, we obtained annotations from AIDA in the same XML schema as
 provided by CSAW team. The userId given was AIDA.
 \begin{verbatim}
@@ -54,9 +54,6 @@ provided by CSAW team. The userId given was AIDA.
 <length>12</length>
 </annotation>
 \end{verbatim}
-
-Both the annotation files were then read into a hashmap of the form, $h(Entity) -> Count$. 
-Maps for the two files were then scanned to generate the statistics presented in the next section.
 
 \subsection{Annotated files}
 XML file containing annotations for 104 files as above and for other 560 files is available at 
@@ -101,44 +98,6 @@ $kurtosis$ & 28.2250405390826\\
 \end{center}
 
 \newpage
-
-\section{AIDA with training data from Wikipedia 2012}
-\begin{center}
-\bigskip \bigskip \bigskip \bigskip
-
-\begin{tabular}{|l|l|}
- \hline
-Total entities annotated by AIDA & 911\\ 
-Total entities annotated by CSAW Team & 3795\\ 
-Total entities common to both & 510\\ 
-CSAW Entities missed by AIDA : (full list follows)  & 3285\\ 
-AIDA Entities missed by CSAW : (full list follows)  & 401\\ 
-\hline
-\end{tabular}
-\captionof{table}{Statistics on Entities}
-\end{center}
-
-\bigskip 
-\bigskip \bigskip 
-\begin{center}
-
-\begin{tabular}{|l|l|}
- \hline
-$n$ & 510\\ 
-$min$ & 0.045454545454545456\\ 
-$max$ & 9.0\\ 
-$mean$ & 1.1572691785583593\\ 
-$std\_dev$ & 0.9019959891067724\\ 
-$median$ & 1.0\\ 
-$skewness$ & 4.558145927208736\\ 
-$kurtosis$ & 27.172766135955523\\ 
-\hline
-\end{tabular}
-\captionof{table}{Statistics for $score = \frac{\text{Annotations by AIDA}}{\text{Annotations by CSAW}}$}
-\end{center}
-
-\newpage
-
 \section{List of entities Annotated by both CSAW and AIDA}
 The score is defined as $score = \frac{\text{Annotations by AIDA}}{\text{Annotations by CSAW}}$
 \begin{longtable}{l|l|l|l}

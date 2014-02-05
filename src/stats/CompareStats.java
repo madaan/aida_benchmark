@@ -1,7 +1,9 @@
 package stats;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,7 +39,7 @@ public class CompareStats {
 	public static void main(String args[]) throws ParserConfigurationException,
 			SAXException, IOException {
 		//	
-		String aidaXMLName = "data/fastlocal/AIDA_Annotations.xml";
+		String aidaXMLName = "data/entitiesWiki2012";
 		String csawXMLName = "data/CSAW_Annotations.xml";
 		String both_filename = "report/entitiesInBoth.tex";
 		String missed_filename = "report/entitiesMissed.tex"; //by either
@@ -51,7 +53,8 @@ public class CompareStats {
 		cs.fillAnnotatedFilesSet();
 
 		// Fill the maps : Entities -> Integer
-		HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMap(aidaXMLName);
+		//HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMap(aidaXMLName);
+		HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMapFromList(aidaXMLName);
 		HashMap<String, Integer> csawEntitiesCountMap = cs.readToMap(csawXMLName);
 
 		// Get the set of entities
@@ -114,6 +117,7 @@ public class CompareStats {
 		
 	}
 
+	
 	private void overallEntityStats(BufferedWriter statsfile, BufferedWriter bw) throws IOException {
 	//set operations are in place
 		Set<String> backup_aida = new HashSet<String>(aidaEntities);
@@ -189,6 +193,22 @@ public class CompareStats {
 				}
 			}
 		}
+		return countMap;
+	}
+	private HashMap<String, Integer> readToMapFromList(String fileName)
+			throws ParserConfigurationException, SAXException, IOException {
+		HashMap<String, Integer> countMap = new HashMap<String, Integer>();
+		BufferedReader br = new BufferedReader(new FileReader(fileName));
+		String entityString;
+		while((entityString = br.readLine()) != null) {
+					Integer currentCount = countMap.get(entityString);
+					if (null == currentCount) {
+						countMap.put(entityString, 1);
+					} else {
+						countMap.put(entityString, currentCount + 1);
+					}
+		}
+		br.close();
 		return countMap;
 	}
 
