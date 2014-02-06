@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,7 +40,7 @@ public class CompareStats {
 	public static void main(String args[]) throws ParserConfigurationException,
 			SAXException, IOException {
 		//	
-		String aidaXMLName = "data/entitiesWiki2012";
+		String aidaXMLName = "data/fastlocal/AIDA_Annotations.xml";
 		String csawXMLName = "data/CSAW_Annotations.xml";
 		String both_filename = "report/entitiesInBoth.tex";
 		String missed_filename = "report/entitiesMissed.tex"; //by either
@@ -53,10 +54,11 @@ public class CompareStats {
 		cs.fillAnnotatedFilesSet();
 
 		// Fill the maps : Entities -> Integer
-		//HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMap(aidaXMLName);
-		HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMapFromList(aidaXMLName);
+		HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMap(aidaXMLName);
+		//HashMap<String, Integer> aidaEntitiesCountMap = cs.readToMapFromList(aidaXMLName);
 		HashMap<String, Integer> csawEntitiesCountMap = cs.readToMap(csawXMLName);
-
+		
+		
 		// Get the set of entities
 		cs.aidaEntities = aidaEntitiesCountMap.keySet();
 		cs.csawEntities = csawEntitiesCountMap.keySet();
@@ -80,6 +82,8 @@ public class CompareStats {
 			String entity = pair.getKey();
 			int csawCount = pair.getValue();
 			// for the same entity, see how much time it has appeared in Aida
+			entity = entity.replace(".", "\u002e");
+
 			Integer aidaCount = aidaEntitiesCountMap.get(entity); // get the
 																	// count for
 																	// aida
@@ -89,6 +93,10 @@ public class CompareStats {
 
 			double percCovered = (double) aidaCount / csawCount;
 			score_stats.addValue(percCovered);
+			if(percCovered == 9) {
+				System.out.println(entity);
+			}
+			
 			both_file.write(entity + " & " + csawCount + "& "
 							+ aidaCount + "&" + Double.toString(percCovered)
 					+ "\\\\\n ");
@@ -96,17 +104,29 @@ public class CompareStats {
 				//	+ aidaCount + ", score : " + Double.toString(percCovered)
 					//+ "\n");
 		}
+		Iterator<Entry<String, Integer>> aidaIter = aidaEntitiesCountMap.entrySet().iterator();
+		//while(aidaIter.hasNext()) {
+			
+		//}
 
 				
 
 		//write stats file
-	
+		
+		
 		stats_file.write("$n$ & " + score_stats.getN() + "\\\\ \n");
 		stats_file.write("min & " + score_stats.getMin() + "\\\\ \n");
 		stats_file.write("max & " + score_stats.getMax() + "\\\\ \n");
 		stats_file.write("mean & " + score_stats.getMean() + "\\\\ \n");
 		stats_file.write("std dev & " + score_stats.getStandardDeviation() + "\\\\ \n");
 		stats_file.write("median & " + score_stats.getPercentile(50) + "\\\\ \n");
+		
+		BufferedWriter num_file = new BufferedWriter(new FileWriter("/home/aman/nums"));
+		double arr[]  = score_stats.getSortedValues();
+		for(int i = 0; i < arr.length; i++) {
+			num_file.write(Double.toString(arr[i]) + "\n");
+		}
+		num_file.close();
 		stats_file.write("skewness & " + score_stats.getSkewness() + "\\\\ \n");
 		stats_file.write("kurtosis & " + score_stats.getKurtosis() + "\\\\ \n");
 		
@@ -133,7 +153,8 @@ public class CompareStats {
 		backup_aida.removeAll(csawEntities);
 		statsfile.write("CSAW Entities missed by AIDA : (full list follows)  & " + backup_csaw.size() + "\\\\ \n");
 		statsfile.write("AIDA Entities missed by CSAW : (full list follows)  & " + backup_aida.size() + "\\\\ \n");
-		
+		System.out.println(backup_aida);
+		//System.out.println(backup_csaw);
 		bw.write("CSAW Entities missed by AIDA : \n");
 		int i = 0;
 		Iterator<String> iterator = backup_csaw.iterator();
@@ -157,7 +178,7 @@ public class CompareStats {
 		backup_aida = aidaEntities;
 	}
 
-	private HashMap<String, Integer> readToMap(String fileName)
+		private HashMap<String, Integer> readToMap(String fileName)
 			throws ParserConfigurationException, SAXException, IOException {
 		HashMap<String, Integer> countMap = new HashMap<String, Integer>();
 		final String annotationTag = "annotation";
@@ -177,6 +198,8 @@ public class CompareStats {
 				String entityString = eElement
 						.getElementsByTagName(wikiNameTag).item(0)
 						.getTextContent();
+				entityString = entityString.replaceAll("\\p{C}", "?");
+				
 
 				String currFileName = eElement.getElementsByTagName(docNameTag)
 						.item(0).getTextContent();
